@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snaproom — Share Party Photos Instantly</title>
+  <meta name="description" content="Create a shared party photo album in seconds. No accounts. Just open and share." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="blob blob-1" aria-hidden="true"></div>
+  <div class="blob blob-2" aria-hidden="true"></div>
+  <canvas id="bgCanvas" aria-hidden="true"></canvas>
+
+  <!-- ═══════════════════════════════
+       HOME SCREEN
+  ═══════════════════════════════ -->
+  <div id="screen-home" class="screen active" role="main">
+    <div class="home-wrap">
+
+      <div class="hero">
+        <div class="hero-logo">📸</div>
+        <h1 class="hero-title gradient-text">Snaproom</h1>
+        <p class="hero-tagline">Share party photos instantly.<br/>No accounts. Just open &amp; upload.</p>
+      </div>
+
+      <!-- Connection status pill -->
+      <div id="connStatus" class="conn-status disconnected" onclick="openSetupModal()">
+        <span id="connDot" class="conn-dot"></span>
+        <span id="connLabel">Not connected · Tap to set up</span>
+      </div>
+
+      <div class="home-cards">
+        <div class="home-card">
+          <div class="card-icon">🎉</div>
+          <h2 class="card-title">Create a Room</h2>
+          <p class="card-desc">Start a shared album. Everyone with the link can view &amp; upload photos.</p>
+          <button class="btn btn-primary full-width" id="createRoomBtn" onclick="startCreate()">Create Room</button>
+        </div>
+
+        <div class="home-card">
+          <div class="card-icon">🔗</div>
+          <h2 class="card-title">Join a Room</h2>
+          <p class="card-desc">Paste the link your friend shared — you'll join their album instantly.</p>
+          <input type="text" id="joinCodeInput" class="input-field"
+            placeholder="Paste room link here…" maxlength="300" autocomplete="off" spellcheck="false" />
+          <button class="btn btn-primary full-width" onclick="startJoin()">Join Room</button>
+        </div>
+      </div>
+
+      <p class="home-footnote">✨ Photos auto-deleted after 24h &nbsp;·&nbsp; Fully anonymous &nbsp;·&nbsp; Free forever</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       ROOM SCREEN
+  ═══════════════════════════════ -->
+  <div id="screen-room" class="screen" role="main">
+    <header class="room-topbar">
+      <button class="btn-icon" onclick="leaveRoom()" aria-label="Leave">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="topbar-center">
+        <span class="room-code-badge" id="roomCodeBadge">ROOM</span>
+        <span class="expiry-badge" id="expiryBadge">24h</span>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-icon btn-icon-purple" onclick="toggleQR()" aria-label="Share">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="4" height="4"/></svg>
+        </button>
+        <button class="btn-icon btn-icon-pink" onclick="openFilePicker()" aria-label="Upload">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="qr-panel" id="qrPanel" aria-hidden="true">
+      <div class="qr-panel-inner">
+        <h3 class="qr-title">📲 Share this room</h3>
+        <canvas id="qrCanvas"></canvas>
+        <p class="qr-room-code" id="qrRoomCode"></p>
+        <div class="qr-url-row">
+          <span class="qr-url" id="qrUrl"></span>
+          <button class="btn-icon btn-sm" onclick="copyRoomLink()" title="Copy link" aria-label="Copy link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+        <p style="font-size:.75rem;color:var(--muted);text-align:center;line-height:1.6">Friends scan QR or open the link.<br/>They can view <em>and</em> upload too.</p>
+        <button class="btn btn-ghost full-width" onclick="toggleQR()">Close</button>
+      </div>
+    </div>
+
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-zone-inner">
+        <div class="drop-icon">📷</div>
+        <h3 class="drop-title">No photos yet</h3>
+        <p class="drop-sub">Be the first to share a moment!</p>
+        <button class="btn btn-primary" onclick="openFilePicker()">Upload Photos</button>
+        <p class="drop-hint">or drag &amp; drop photos here</p>
+      </div>
+    </div>
+
+    <div class="photo-grid" id="photoGrid"></div>
+
+    <button class="fab" id="fabBtn" onclick="openFilePicker()" aria-label="Upload" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    </button>
+
+    <input type="file" id="fileInput" accept="image/*" multiple style="display:none" onchange="handleFiles(event)" />
+  </div>
+
+  <!-- ═══════════════════════════════
+       MODAL: Firebase Setup
+  ═══════════════════════════════ -->
+  <div class="modal-overlay" id="setupModal" style="display:none" role="dialog" aria-modal="true">
+    <div class="modal-box setup-modal-box">
+      <button class="modal-close-btn" onclick="closeSetupModal()" aria-label="Close">✕</button>
+      <div class="modal-emoji">🔥</div>
+      <h2 class="modal-title">One-Time Setup</h2>
+      <p class="modal-sub">Connect a free Firebase database so photos sync across everyone's phones.</p>
+
+      <div class="setup-steps-mini">
+        <div class="mini-step">
+          <span class="mini-num">1</span>
+          <span>Go to <a href="https://console.firebase.google.com" target="_blank" class="link" rel="noopener">console.firebase.google.com</a> → sign in with Google → <strong>Add project</strong></span>
+        </div>
+        <div class="mini-step">
+          <span class="mini-num">2</span>
+          <span>In left menu → <strong>Realtime Database</strong> → <strong>Create Database</strong> → choose location → <strong>"Start in test mode"</strong> → Enable</span>
+        </div>
+        <div class="mini-step">
+          <span class="mini-num">3</span>
+          <span>Copy the URL shown — it looks like:<br/><code>https://myapp-12345-default-rtdb.firebaseio.com</code></span>
+        </div>
+      </div>
+
+      <div class="setup-input-wrap">
+        <input type="url" id="fbUrlInput" class="input-field" style="margin-bottom:0"
+          placeholder="https://your-project-default-rtdb.firebaseio.com"
+          autocomplete="off" spellcheck="false"
+          oninput="resetConnTest()" />
+        <div id="connTestResult" class="conn-test-result" style="display:none"></div>
+      </div>
+
+      <button class="btn btn-primary full-width" id="testConnBtn" onclick="testAndConnect()" style="margin-top:14px">
+        Test &amp; Connect →
+      </button>
+      <p class="setup-note">🔒 URL is saved on your device only. The database is yours.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       MODAL: Name
+  ═══════════════════════════════ -->
+  <div class="modal-overlay" id="nameModal" style="display:none" role="dialog" aria-modal="true">
+    <div class="modal-box name-modal-box">
+      <div class="modal-emoji">👋</div>
+      <h2 class="modal-title">What's your name?</h2>
+      <p class="modal-sub">Your name will appear on photos you upload.</p>
+      <input type="text" id="nameInput" class="input-field" placeholder="e.g. Ali, Sana, Ahmed…" maxlength="24" autocomplete="off" />
+      <button class="btn btn-primary full-width" onclick="confirmName()">Enter Room →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════
+       MODAL: Photo Viewer
+  ═══════════════════════════════ -->
+  <div class="modal-overlay photo-modal-overlay" id="photoModal" style="display:none" role="dialog" aria-modal="true">
+    <button class="photo-modal-close" onclick="closePhotoModal()" aria-label="Close">✕</button>
+    <button class="photo-nav photo-nav-prev" onclick="navPhoto(-1)" aria-label="Previous">‹</button>
+    <div class="photo-modal-content">
+      <img id="photoModalImg" src="" alt="Full photo" class="photo-modal-img" />
+      <div class="photo-modal-bar">
+        <div class="photo-modal-info">
+          <span class="photo-modal-name" id="photoModalName"></span>
+          <span class="photo-modal-time" id="photoModalTime"></span>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="downloadCurrent()">⬇ Save</button>
+      </div>
+    </div>
+    <button class="photo-nav photo-nav-next" onclick="navPhoto(1)" aria-label="Next">›</button>
+  </div>
+
+  <!-- Upload progress -->
+  <div class="upload-progress-bar" id="uploadProgressBar" style="display:none">
+    <div class="upb-track"><div class="upb-fill" id="upbFill"></div></div>
+    <div class="upb-info"><span id="upbText">Uploading…</span><span id="upbPct">0%</span></div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toastContainer" class="toast-container" aria-live="assertive"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
